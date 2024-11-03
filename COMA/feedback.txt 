@@ -1,0 +1,61 @@
+critic, agents로 구성됨
+
+
+⑭ 각각의 agents은 서로가 정지해 있는 경우를
+레이시물션하여 학습
+.
+⑭ 중앙화된critic이 agent 들의 학습정보를 바탕으로
+각각의 행동에 따른jint pobability 학습
+->정확히는 joint probability를 학습하는 것이 아니라 
+all agents의 joint action 에 대한 Q-value 학습 
+-> 이건 Advantage() 를 구하기 위해. 이것이 COMA의 핵심 
+
+def train(self, o1_list, a1_list, pi_a1_list, o2_list, a2_list, pi_a2_list, r_list):
+    # ... (중략) ...
+    
+    Q = self.critic.get_value(obs1, obs2)
+    
+    # Advantage 계산
+    for t in range(T):
+        temp_Q1 = torch.zeros(1, self.N_action)
+        temp_Q2 = torch.zeros(1, self.N_action)
+        for a1 in range(self.N_action):
+            temp_Q1[0, a1] = Q[t, a1 * self.N_action + a2_list[t]]
+        for a2 in range(self.N_action):
+            temp_Q2[0, a2] = Q[t, a1_list[t] * self.N_action + a2]
+        
+        a_index = a1_list[t] * self.N_action + a2_list[t]
+        #advantage() 
+        temp_A1 = Q[t, a_index] - torch.sum(pi_a1_list[t] * temp_Q1)
+        temp_A2 = Q[t, a_index] - torch.sum(pi_a2_list[t] * temp_Q2)
+        
+        A1_list.append(temp_A1)
+        A2_list.append(temp_A2) 
+
+        => 즉 advantage()를 사용한다는 것은 
+        여기에 쓰이는 agent는 다른 agent의 행동도 고려하여 
+        전체 시스템에서 더욱 성능 향상을 이루는 것을 목표로 학습을 함 
+        또한 행동을 고정하면서 자신의 다른 행동들과 비교하여 현재 행동의 
+        가치 추정을 하는 것이라는 것을 알 수 있음 
+
+
+
+        코드1  
+        pi 배열은 현재 obs에서 agent가 가능한 행동을 선택할 확률 
+        ex) 행동 공간이 3개라면 pi_a1=[0.2,0.5,0.3]임.확률이기에 전체 합은 1 
+
+        코드2 
+        이 반복문을 통해 결국은 joint action에 대한 Q-value를 구하는 것임 
+        ->이는 후에 Advantage()를 구할 때 쓰임 
+
+        코드3 
+        이 부분이 COMA의 핵심 부분임. 
+        ->Advantage()를 구하는 부분. 
+
+
+
+
+
+
+
+
